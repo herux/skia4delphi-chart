@@ -17,6 +17,4 @@ Check my other links: https://linktr.ee/igorbastosib
 ## Donation:
 Help me keep my almost great work!
 
-<a href="https://i.imgur.com/m6XraH3.png" target="_blank">
-  <img src="https://i.imgur.com/m6XraH3.png" alt="image" width="400" />
-</a>
+<img src="https://i.imgur.com/m6XraH3.png" alt="image" width="400" />
