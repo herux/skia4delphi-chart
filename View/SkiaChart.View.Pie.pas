@@ -537,18 +537,37 @@ procedure TFrmSkiaChartPie.SliceAdd(AValue: Double; AColor: TAlphaColor;
   AText: string);
 begin
   var
-  LIndex := Length(FSlices);
-  SetLength(FSlices, Succ(LIndex));
-  FSlices[LIndex] := TPieSlice.Create(AValue, AColor, AText);
+  LIndex := -1;
 
-  var
-  LLyt := TLayoutLegend.Create(Self);
-  LLyt.Parent := lytLegend;
-  LLyt.OnTap := OnLegendTap;
-  LLyt.Text.Text := FSlices[LIndex].Text;
-  LLyt.Color := FSlices[LIndex].Color;
-  LLyt.&Index := LIndex;
-  FObjLstLegend.Add(LLyt)
+  // Find slice with same Text
+  for var i := Low(FSlices) to High(FSlices) do
+  begin
+    if FSlices[i].Text = AText then
+    begin
+      LIndex := i;
+      Break;
+    end;
+  end;
+  if LIndex = -1 then
+  begin
+    LIndex := Length(FSlices);
+    SetLength(FSlices, Succ(LIndex));
+    FSlices[LIndex] := TPieSlice.Create(AValue, AColor, AText);
+
+    var
+    LLyt := TLayoutLegend.Create(Self);
+    LLyt.Parent := lytLegend;
+    LLyt.OnTap := OnLegendTap;
+    LLyt.Text.Text := FSlices[LIndex].Text;
+    LLyt.Color := FSlices[LIndex].Color;
+    LLyt.&Index := LIndex;
+    FObjLstLegend.Add(LLyt)
+  end
+  else
+  begin
+    FSlices[LIndex].Value := AValue;
+    FSlices[LIndex].Color := AColor;
+  end;
 end;
 
 end.
