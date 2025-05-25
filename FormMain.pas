@@ -15,7 +15,11 @@ type
     Button1: TButton;
     Layout1: TLayout;
     chkPie: TCheckBox;
+    tbarLegendSize: TTrackBar;
+    lytChartType: TLayout;
+    lytOptions: TLayout;
     procedure Button1Click(Sender: TObject);
+    procedure tbarLegendSizeChange(Sender: TObject);
   private
     FFrmChart: TFrame;
     { Private declarations }
@@ -57,6 +61,11 @@ begin
   end;
   if Assigned(FFrmChart) then
     TFrmSkiaChartPie(FFrmChart).StartAnimation;
+end;
+
+procedure TForm1.tbarLegendSizeChange(Sender: TObject);
+begin
+  TFrmSkiaChartPie(FFrmChart).LegendSize := tbarLegendSize.Value / 100;
 end;
 
 end.

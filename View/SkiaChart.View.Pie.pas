@@ -22,9 +22,14 @@ type
 
   TLayoutLegend = class(TLayout)
   private
+    const
+    FRectColorWidth = 35;
+    FRectColorHeight = 20;
+    var
     FRectColor: TRectangle;
     FLbl: TLabel;
     FIndex: Integer;
+    FLegendSize: Single;
 
     function GetColor: TAlphaColor;
     procedure SetColor(const Value: TAlphaColor);
@@ -61,18 +66,13 @@ type
     faniSelectedSliceY: TFloatAnimation;
     tmrAnimation: TTimer;
     procedure tmrAnimationTimer(Sender: TObject);
-    procedure skChartDraw(ASender: TObject; const ACanvas: ISkCanvas;
-      const ADest: TRectF; const AOpacity: Single);
-    procedure skChartMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Single);
+    procedure skChartDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
+    procedure skChartMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure rctSelectedSliceBackgroundClick(Sender: TObject);
-    procedure rctSelectedSliceBackgroundTap(Sender: TObject;
-      const Point: TPointF);
+    procedure rctSelectedSliceBackgroundTap(Sender: TObject; const Point: TPointF);
     procedure tmrLabelTimer(Sender: TObject);
-    procedure lytSelectedSliceBottomPainting(Sender: TObject; Canvas: TCanvas;
-      const ARect: TRectF);
-    procedure lytLegendPainting(Sender: TObject; Canvas: TCanvas;
-      const ARect: TRectF);
+    procedure lytSelectedSliceBottomPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+    procedure lytLegendPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
   private
     const
     CStartAngle = 270; // Start from 270 (12 hours)
@@ -90,12 +90,15 @@ type
       $FFFF4081 // Hot pink
       );
 
+    procedure SetLegendSize(const Value: Single);
+
   var
     FSlices: TArray<TPieSlice>;
     FAnimationAngle: Single; // Current animation angle
     FAnimationSpeed: Single; // Animation speed (radius per tick)
     FSelectedSlice: Integer; // selected slice index (-1 = none)
     FObjLstLegend: TObjectList<TLayoutLegend>;
+    FLegendSize: Single;
 
     procedure UpdateLegend(AIndex: Integer; ACenter: TPointF; ARadius: Single; ATotal: Single);
     procedure OnLegendTap(Sender: TObject; const APoint: TPointF);
@@ -112,6 +115,10 @@ type
     /// <summary> Add a slice with custom color
     /// </summary>
     procedure SliceAdd(AValue: Double; AColor: TAlphaColor; AText: string); overload;
+
+    /// <summary> 1=100%
+    /// </summary>
+    property LegendSize: Single read FLegendSize write SetLegendSize;
     { Public declarations }
   end;
 
@@ -153,7 +160,7 @@ begin
   LLytColor := TLayout.Create(Self);
   LLytColor.Parent := Self;
   LLytColor.Align := TAlignLayout.MostLeft;
-  LLytColor.Width := 50;
+  LLytColor.Width := FRectColorWidth;
   LLytColor.TabStop := False;
   LLytColor.HitTest := False;
   LLytColor.Margins.Left := 10;
@@ -162,7 +169,7 @@ begin
   FRectColor.Parent := LLytColor;
   FRectColor.Align := TAlignLayout.VertCenter;
   FRectColor.Stroke.Kind := TBrushKind.None;
-  FRectColor.Height := 20;
+  FRectColor.Height := FRectColorHeight;
   FRectColor.Margins.Left := 5;
   FRectColor.Margins.Right := 5;
   FRectColor.HitTest := False;
@@ -174,7 +181,7 @@ begin
   FLbl.WordWrap := False;
   FLbl.Margins.Left := 5;
   FLbl.HitTest := False;
-  FLbl.StyledSettings := FLbl.StyledSettings - [TStyledSetting.Style];
+  FLbl.StyledSettings := FLbl.StyledSettings - [TStyledSetting.Size, TStyledSetting.Style];
 end;
 
 function TLayoutLegend.GetColor: TAlphaColor;
@@ -185,6 +192,9 @@ end;
 procedure TLayoutLegend.Painting;
 begin
   inherited;
+  TControl(FRectColor.Parent).Width := FRectColorWidth * FLegendSize;
+  FRectColor.Height := FRectColorHeight * FLegendSize;
+  FLbl.TextSettings.Font.Size := 12 * FLegendSize;
   Width := FLbl.Position.X + FLbl.Width + 10;
 end;
 
@@ -208,6 +218,7 @@ constructor TFrmSkiaChartPie.Create(AOwner: TComponent);
 begin
   inherited;
   SetLength(FSlices, 0);
+  FLegendSize := 1;
   FObjLstLegend := TObjectList<TLayoutLegend>.Create;
 end;
 
@@ -228,28 +239,30 @@ end;
 
 procedure TFrmSkiaChartPie.lytLegendPainting(Sender: TObject; Canvas: TCanvas;
   const ARect: TRectF);
-const
-  CHeight = 25;
 begin
   // Legend button position
   lytLegend.OnPainting := nil;
   try
     var
-    LHeight := CHeight;
+    LHeightBase := (25 * (FLegendSize));
+    var
+    LHeight := LHeightBase;
     var
     LPos : Single := 0;
     for var i := 0 to Pred(FObjLstLegend.Count) do
     begin
       var
       LLyt := FObjLstLegend[i];
+      LLyt.FLegendSize := FLegendSize;
+      lytLegend.Height := LHeightBase;
       var
       LPosNew := LPos + LLyt.Width;
       if LPosNew > (lytLegend.Width - 5) then
       begin // Add new line
-        LHeight := LHeight + CHeight;
+        LHeight := LHeight + LHeightBase;
         LPos := 0;
       end;
-      LLyt.Position.Y := LHeight - CHeight;
+      LLyt.Position.Y := LHeight - LHeightBase;
       LLyt.Position.X := LPos;
       LPos := LLyt.Position.X + LLyt.Width;
     end;
@@ -286,6 +299,11 @@ begin
     Exit;
   FSelectedSlice := -1;
   UpdateLegend(FSelectedSlice, TPointF.Create(0, 0), 0, 0);
+end;
+
+procedure TFrmSkiaChartPie.SetLegendSize(const Value: Single);
+begin
+  FLegendSize := Value;
 end;
 
 procedure TFrmSkiaChartPie.skChartDraw(ASender: TObject;

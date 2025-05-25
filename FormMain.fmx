@@ -24,12 +24,43 @@ object Form1: TForm1
       TextSettings.Trimming = None
       OnClick = Button1Click
     end
-    object chkPie: TCheckBox
-      IsChecked = True
-      Position.X = 16.000000000000000000
-      Position.Y = 8.000000000000000000
+    object lytChartType: TLayout
+      Align = Left
+      Size.Width = 177.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
       TabOrder = 1
-      Text = 'Pie'
+      TabStop = False
+      object chkPie: TCheckBox
+        IsChecked = True
+        Position.X = 16.000000000000000000
+        Position.Y = 8.000000000000000000
+        TabOrder = 1
+        Text = 'Pie'
+      end
+    end
+    object lytOptions: TLayout
+      Align = Left
+      Position.X = 177.000000000000000000
+      Size.Width = 168.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      TabStop = False
+      object tbarLegendSize: TTrackBar
+        CanParentFocus = True
+        Max = 200.000000000000000000
+        Min = 1.000000000000000000
+        Orientation = Horizontal
+        Position.X = 24.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 129.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Value = 100.000000000000000000
+        OnChange = tbarLegendSizeChange
+      end
     end
   end
 end
