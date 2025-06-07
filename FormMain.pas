@@ -18,6 +18,7 @@ type
     tbarLegendSize: TTrackBar;
     lytChartType: TLayout;
     lytOptions: TLayout;
+    lblLegendSize: TLabel;
     procedure Button1Click(Sender: TObject);
     procedure tbarLegendSizeChange(Sender: TObject);
   private
@@ -66,6 +67,7 @@ end;
 procedure TForm1.tbarLegendSizeChange(Sender: TObject);
 begin
   TFrmSkiaChartPie(FFrmChart).LegendSize := tbarLegendSize.Value / 100;
+  lblLegendSize.Text := 'Legend size: ' + tbarLegendSize.Value.ToString;
 end;
 
 end.

@@ -4,6 +4,7 @@ interface
 
 uses
   System.Generics.Collections,
+  System.Messaging,
 
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
@@ -11,10 +12,26 @@ uses
   FMX.Layouts;
 
 type
+  TMessagingSliceEnabled = class(System.Messaging.TMessage)
+  private
+    FIndex: Integer;
+    FEnabled: Boolean;
+
+    { private declarations }
+  protected
+    { protected declarations }
+  public
+    constructor Create(AIndex: Integer; AEnabled: Boolean); overload; virtual;
+
+    property &Index: Integer read FIndex write FIndex;
+    property Enabled: Boolean read FEnabled write FEnabled;
+    { public declarations }
+  end;
+
   TPieSlice = record
-    Value: Double; // Valor da fatia
-    Color: TAlphaColor; // Cor da fatia
-    Text: string; // Rótulo da fatia
+    Value: Double;
+    Color: TAlphaColor;
+    Text: string; // Text for the legend
     Enabled: Boolean;
 
     constructor Create(AValue: Double; AColor: TAlphaColor; AText: string; AEnabled: Boolean = True);
@@ -37,10 +54,11 @@ type
   protected
     procedure Painting; override;
     procedure Click; override;
-    procedure Tap(const Point: TPointF); override;
+    procedure MessageListener(const Sender: TObject; const M: TMessage);
     { Protected declarations }
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
 
     property Color: TAlphaColor read GetColor write SetColor;
     property Text: TLabel read FLbl;
@@ -182,11 +200,36 @@ begin
   FLbl.Margins.Left := 5;
   FLbl.HitTest := False;
   FLbl.StyledSettings := FLbl.StyledSettings - [TStyledSetting.Size, TStyledSetting.Style];
+
+  TMessageManager.DefaultManager.SubscribeToMessage(TMessagingSliceEnabled, MessageListener);
+end;
+
+destructor TLayoutLegend.Destroy;
+begin
+  TMessageManager.DefaultManager.Unsubscribe(TMessagingSliceEnabled, MessageListener);
+  inherited;
 end;
 
 function TLayoutLegend.GetColor: TAlphaColor;
 begin
   Result := FRectColor.Fill.Color;
+end;
+
+procedure TLayoutLegend.MessageListener(const Sender: TObject;
+  const M: TMessage);
+begin
+  if (M.InheritsFrom(TMessagingSliceEnabled)) then
+  begin
+    var
+    LMSE := M as TMessagingSliceEnabled;
+    if LMSE.Index = &Index then
+    begin
+      if (TFontStyle.fsStrikeOut in FLbl.TextSettings.Font.Style) then
+        FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style - [TFontStyle.fsStrikeOut]
+      else
+        FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style + [TFontStyle.fsStrikeOut];
+    end;
+  end;
 end;
 
 procedure TLayoutLegend.Painting;
@@ -201,15 +244,6 @@ end;
 procedure TLayoutLegend.SetColor(const Value: TAlphaColor);
 begin
   FRectColor.Fill.Color := Value;
-end;
-
-procedure TLayoutLegend.Tap(const Point: TPointF);
-begin
-  inherited;
-  if (TFontStyle.fsStrikeOut in FLbl.TextSettings.Font.Style) then
-    FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style - [TFontStyle.fsStrikeOut]
-  else
-    FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style + [TFontStyle.fsStrikeOut];
 end;
 
 { TFrmSkiaChartPie }
@@ -280,8 +314,25 @@ end;
 
 procedure TFrmSkiaChartPie.OnLegendTap(Sender: TObject; const APoint: TPointF);
 begin
-  FSlices[TLayoutLegend(Sender).&Index].Enabled := not FSlices[TLayoutLegend(Sender).&Index].Enabled;
-  skChart.Redraw;
+  var
+  LEnabledCount := 2;
+  if FSlices[TLayoutLegend(Sender).&Index].Enabled then
+  begin // Checks if the current lenged is the last one TRUE, can't disable last one
+    LEnabledCount := 0;
+    for var i := Low(FSlices) to High(FSlices) do
+    begin
+      if FSlices[i].Enabled then
+        Inc(LEnabledCount);
+      if LEnabledCount > 1 then
+        Break;
+    end;
+  end;
+  if LEnabledCount > 1 then
+  begin
+    FSlices[TLayoutLegend(Sender).&Index].Enabled := not FSlices[TLayoutLegend(Sender).&Index].Enabled;
+    TMessageManager.DefaultManager.SendMessage(Sender, TMessagingSliceEnabled.Create(TLayoutLegend(Sender).&Index, FSlices[TLayoutLegend(Sender).&Index].Enabled));
+    skChart.Redraw;
+  end;
 end;
 
 procedure TFrmSkiaChartPie.rctSelectedSliceBackgroundClick(Sender: TObject);
@@ -330,10 +381,6 @@ begin
     if LSlice.Enabled then
     begin
       LTotal := LTotal + LSlice.Value
-    end
-    else
-    begin
-      StrToInt('1');
     end;
 
   // Initialize
@@ -366,9 +413,14 @@ begin
         try
           LRect := TRectF.Create(LCenter.X - LRadius, LCenter.Y - LRadius, LCenter.X + LRadius, LCenter.Y + LRadius);
           LPathBuilder.MoveTo(LCenter); // Start from center
-          LPathBuilder.ArcTo(LRect, LStartAngle, LDrawAngle, False); // Add arc
-          LPathBuilder.LineTo(LCenter); // Back to center
-          LPathBuilder.Close; // close path
+          if LDrawAngle >= 360 then
+            LPathBuilder.AddCircle(LCenter.X, LCenter.Y, LRadius)
+          else
+          begin
+            LPathBuilder.ArcTo(LRect, LStartAngle, LDrawAngle, False); // Add arc
+            LPathBuilder.LineTo(LCenter); // Back to center
+            LPathBuilder.Close; // close path
+          end;
           LPath := LPathBuilder.Detach;
           ACanvas.DrawPath(LPath, LPaint);
         finally
@@ -586,6 +638,14 @@ begin
     FSlices[LIndex].Value := AValue;
     FSlices[LIndex].Color := AColor;
   end;
+end;
+
+{ TMessagingSliceEnabled }
+
+constructor TMessagingSliceEnabled.Create(AIndex: Integer; AEnabled: Boolean);
+begin
+  FIndex := AIndex;
+  FEnabled := AEnabled;
 end;
 
 end.

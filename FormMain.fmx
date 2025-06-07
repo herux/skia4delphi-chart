@@ -52,14 +52,20 @@ object Form1: TForm1
         Max = 200.000000000000000000
         Min = 1.000000000000000000
         Orientation = Horizontal
-        Position.X = 24.000000000000000000
-        Position.Y = 8.000000000000000000
+        Position.X = 16.000000000000000000
+        Position.Y = 23.000000000000000000
         Size.Width = 129.000000000000000000
         Size.Height = 19.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
         Value = 100.000000000000000000
         OnChange = tbarLegendSizeChange
+      end
+      object lblLegendSize: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 8.000000000000000000
+        Text = 'Legend size:'
+        TabOrder = 1
       end
     end
   end
