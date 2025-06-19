@@ -126,6 +126,7 @@ type
     destructor Destroy; override;
 
     procedure StartAnimation;
+    procedure Clear;
 
     /// <summary> Add a slice with default color
     /// </summary>
@@ -247,6 +248,19 @@ begin
 end;
 
 { TFrmSkiaChartPie }
+
+procedure TFrmSkiaChartPie.Clear;
+begin
+  skChart.OnDraw := nil;
+  lytLegend.OnPainting := nil;
+  try
+    SetLength(FSlices, 0);
+    FObjLstLegend.Clear;
+  finally
+    skChart.OnDraw := skChartDraw;
+    lytLegend.OnPainting := lytLegendPainting;
+  end;
+end;
 
 constructor TFrmSkiaChartPie.Create(AOwner: TComponent);
 begin
@@ -598,7 +612,7 @@ procedure TFrmSkiaChartPie.SliceAdd(AValue: Double; AText: string);
 begin
   var
   LIndex := Length(FSlices);
-  if LIndex > Length(CAryColors) then
+  if LIndex > Pred(Length(CAryColors)) then
     LIndex := LIndex - Length(CAryColors);
   SliceAdd(AValue, CAryColors[LIndex], AText);
 end;
