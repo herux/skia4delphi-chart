@@ -1,4 +1,4 @@
-inherited FrmSkiaChartPie: TFrmSkiaChartPie
+inherited FrmSkiaChartBars: TFrmSkiaChartBars
   inherited skChart: TSkPaintBox
     OnMouseDown = skChartMouseDown
     inherited lytSelectedItem: TLayout

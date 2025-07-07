@@ -294,9 +294,18 @@
             <Form>Form1</Form>
             <FormType>fmx</FormType>
         </DCCReference>
+        <DCCReference Include="Controller\SkiaChart.Controller.Chart.pas"/>
+        <DCCReference Include="View\SkiaChart.View.Model.pas">
+            <Form>FrmSkiaChartModel</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="View\SkiaChart.View.Bars.pas">
+            <Form>FrmSkiaChartBars</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="View\SkiaChart.View.Pie.pas">
             <Form>FrmSkiaChartPie</Form>
-            <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Base">
@@ -678,6 +687,12 @@
                 <DeployFile LocalName="Win64\Debug\SkiaChart.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>SkiaChart.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win64\Debug\SkiaChart.rsm" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win64">
+                        <RemoteName>SkiaChart.rsm</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

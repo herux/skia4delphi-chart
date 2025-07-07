@@ -8,20 +8,25 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, System.Skia,
   FMX.Skia, FMX.Controls.Presentation, FMX.StdCtrls, FMX.Layouts, FMX.Objects,
-  FMX.Ani;
+  FMX.Ani, FMX.ListBox;
 
 type
   TForm1 = class(TForm)
     Button1: TButton;
     Layout1: TLayout;
-    chkPie: TCheckBox;
     tbarLegendSize: TTrackBar;
     lytChartType: TLayout;
     lytOptions: TLayout;
     lblLegendSize: TLabel;
+    Label1: TLabel;
+    cbxChartType: TComboBox;
     procedure Button1Click(Sender: TObject);
     procedure tbarLegendSizeChange(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
+    type
+    ChartType = (ctBar, ctPie);
+    var
     FFrmChart: TFrame;
     { Private declarations }
   public
@@ -34,39 +39,59 @@ var
 implementation
 
 uses
+  System.TypInfo,
+  SkiaChart.View.Model,
+  SkiaChart.View.Bars,
   SkiaChart.View.Pie;
 
 {$R *.fmx}
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  if not Assigned(FFrmChart) then
-  begin
-    if chkPie.IsChecked then
-    begin
-      FFrmChart := TFrmSkiaChartPie.Create(Self);
-      FFrmChart.Parent := Self;
-      FFrmChart.Align := TAlignLayout.Client;
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(32415, 'Category 1');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(10000, 'Category 2');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(5000, 'Category 3');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(10661.88, 'Category 4');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(5000, 'Category 5');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(1518, 'Category 6');
-      TFrmSkiaChartPie(FFrmChart).SliceAdd(14206.67, 'Category 7');
-    end
-    else
-    begin
-      // yet to come
-    end;
+  case ChartType(GetEnumValue(TypeInfo(ChartType), cbxChartType.Text)) of
+    ChartType.ctPie:
+      begin
+        if (Assigned(FFrmChart)) and (not FFrmChart.InheritsFrom(TFrmSkiaChartPie)) then
+            FreeAndNil(FFrmChart);
+        if not (Assigned(FFrmChart)) then
+          FFrmChart := TFrmSkiaChartPie.Create(Self);
+      end;
+    ChartType.ctBar:
+      begin
+        if (Assigned(FFrmChart)) and (not FFrmChart.InheritsFrom(TFrmSkiaChartBars)) then
+            FreeAndNil(FFrmChart);
+        if not (Assigned(FFrmChart)) then
+          FFrmChart := TFrmSkiaChartBars.Create(Self);
+      end;
   end;
-  if Assigned(FFrmChart) then
-    TFrmSkiaChartPie(FFrmChart).StartAnimation;
+
+  FFrmChart.Parent := Self;
+  FFrmChart.Align := TAlignLayout.Client;
+  FFrmChart.Margins.Top := 10;
+
+  TFrmSkiaChartModel(FFrmChart).Clear;
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(32415, 'Category 1');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(10000, 'Category 2');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(5000, 'Category 3');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(10661.88, 'Category 4');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(5000, 'Category 5');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(1518, 'Category 6');
+  TFrmSkiaChartModel(FFrmChart).ItemAdd(14206.67, 'Category 7');
+  TFrmSkiaChartModel(FFrmChart).StartAnimation;
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  for var LItem := Low(ChartType) to High(ChartType) do
+  begin
+    cbxChartType.Items.Add(GetEnumName(TypeInfo(ChartType), Ord(LItem)));
+  end;
+  cbxChartType.ItemIndex := 0;
 end;
 
 procedure TForm1.tbarLegendSizeChange(Sender: TObject);
 begin
-  TFrmSkiaChartPie(FFrmChart).LegendSize := tbarLegendSize.Value / 100;
+  TFrmSkiaChartModel(FFrmChart).LegendSize := tbarLegendSize.Value / 100;
   lblLegendSize.Text := 'Legend size: ' + tbarLegendSize.Value.ToString;
 end;
 

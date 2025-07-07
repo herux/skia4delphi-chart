@@ -7,6 +7,7 @@ object Form1: TForm1
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
   DesignerMasterStyle = 0
   object Layout1: TLayout
     Align = Top
@@ -26,17 +27,33 @@ object Form1: TForm1
     end
     object lytChartType: TLayout
       Align = Left
+      Padding.Left = 10.000000000000000000
+      Padding.Top = 5.000000000000000000
       Size.Width = 177.000000000000000000
       Size.Height = 50.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
       TabStop = False
-      object chkPie: TCheckBox
-        IsChecked = True
-        Position.X = 16.000000000000000000
-        Position.Y = 8.000000000000000000
-        TabOrder = 1
-        Text = 'Pie'
+      object Label1: TLabel
+        Align = Top
+        Position.X = 10.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 167.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Chart Type'
+        TabOrder = 2
+        TabStop = False
+      end
+      object cbxChartType: TComboBox
+        Align = Top
+        Position.X = 10.000000000000000000
+        Position.Y = 22.000000000000000000
+        Size.Width = 167.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        TabStop = False
       end
     end
     object lytOptions: TLayout

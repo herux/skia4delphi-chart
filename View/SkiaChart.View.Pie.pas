@@ -3,141 +3,27 @@ unit SkiaChart.View.Pie;
 interface
 
 uses
-  System.Generics.Collections,
-  System.Messaging,
-
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
-  System.Skia, FMX.Ani, FMX.Controls.Presentation, FMX.Objects, FMX.Skia,
-  FMX.Layouts;
+  SkiaChart.View.Model, System.Skia, FMX.Ani, FMX.Controls.Presentation,
+  FMX.Objects, FMX.Skia, FMX.Layouts;
 
 type
-  TMessagingSliceEnabled = class(System.Messaging.TMessage)
-  private
-    FIndex: Integer;
-    FEnabled: Boolean;
-
-    { private declarations }
-  protected
-    { protected declarations }
-  public
-    constructor Create(AIndex: Integer; AEnabled: Boolean); overload; virtual;
-
-    property &Index: Integer read FIndex write FIndex;
-    property Enabled: Boolean read FEnabled write FEnabled;
-    { public declarations }
-  end;
-
-  TPieSlice = record
-    Value: Double;
-    Color: TAlphaColor;
-    Text: string; // Text for the legend
-    Enabled: Boolean;
-
-    constructor Create(AValue: Double; AColor: TAlphaColor; AText: string; AEnabled: Boolean = True);
-  end;
-
-  TLayoutLegend = class(TLayout)
-  private
-    const
-    FRectColorWidth = 35;
-    FRectColorHeight = 20;
-    var
-    FRectColor: TRectangle;
-    FLbl: TLabel;
-    FIndex: Integer;
-    FLegendSize: Single;
-
-    function GetColor: TAlphaColor;
-    procedure SetColor(const Value: TAlphaColor);
-    { Private declarations }
-  protected
-    procedure Painting; override;
-    procedure Click; override;
-    procedure MessageListener(const Sender: TObject; const M: TMessage);
-    { Protected declarations }
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-
-    property Color: TAlphaColor read GetColor write SetColor;
-    property Text: TLabel read FLbl;
-    property &Index: Integer read FIndex write FIndex;
-
-    { Public declarations }
-  end;
-
-  TFrmSkiaChartPie = class(TFrame)
-    lytLegend: TLayout;
-    skChart: TSkPaintBox;
-    lytSelectedSlice: TLayout;
-    rctSelectedSliceBackground: TRectangle;
-    lytSelectedSliceBackground: TLayout;
-    lblSelectedSliceText: TLabel;
-    lytSelectedSliceBottom: TLayout;
-    lblSelectedSliceValue: TLabel;
-    lytSelectedSliceColor: TLayout;
-    rctSelectedSliceColor: TRectangle;
-    caniSelectedSlice: TColorAnimation;
-    tmrLabel: TTimer;
-    faniSelectedSliceX: TFloatAnimation;
-    faniSelectedSliceY: TFloatAnimation;
-    tmrAnimation: TTimer;
+  TFrmSkiaChartPie = class(TFrmSkiaChartModel)
+    procedure skChartMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Single);
     procedure tmrAnimationTimer(Sender: TObject);
-    procedure skChartDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
-    procedure skChartMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-    procedure rctSelectedSliceBackgroundClick(Sender: TObject);
-    procedure rctSelectedSliceBackgroundTap(Sender: TObject; const Point: TPointF);
-    procedure tmrLabelTimer(Sender: TObject);
-    procedure lytSelectedSliceBottomPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
-    procedure lytLegendPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
   private
     const
     CStartAngle = 270; // Start from 270 (12 hours)
-    CAryColors: array [0 .. 10] of LongWord = (
-      $FF36A2EB, // 0
-      $FFFE6383,
-      $FFFE9F3E,
-      $FFFFCB55,
-      $FF4AC0C0,
-      $FF9966FF,
-      $FFCACACA,
-      $FF4CAF50,
-      $FFFFF59D,
-      $FFE1F5FE,
-      $FFFF4081 // Hot pink
-      );
-
-    procedure SetLegendSize(const Value: Single);
-
-  var
-    FSlices: TArray<TPieSlice>;
-    FAnimationAngle: Single; // Current animation angle
-    FAnimationSpeed: Single; // Animation speed (radius per tick)
-    FSelectedSlice: Integer; // selected slice index (-1 = none)
-    FObjLstLegend: TObjectList<TLayoutLegend>;
-    FLegendSize: Single;
 
     procedure UpdateLegend(AIndex: Integer; ACenter: TPointF; ARadius: Single; ATotal: Single);
-    procedure OnLegendTap(Sender: TObject; const APoint: TPointF);
     { Private declarations }
+  protected
+    procedure DoChartDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single); override;
+    { Protected declarations }
   public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-
-    procedure StartAnimation;
-    procedure Clear;
-
-    /// <summary> Add a slice with default color
-    /// </summary>
-    procedure SliceAdd(AValue: Double; AText: string); overload;
-    /// <summary> Add a slice with custom color
-    /// </summary>
-    procedure SliceAdd(AValue: Double; AColor: TAlphaColor; AText: string); overload;
-
-    /// <summary> 1=100%
-    /// </summary>
-    property LegendSize: Single read FLegendSize write SetLegendSize;
+    procedure StartAnimation; override;
     { Public declarations }
   end;
 
@@ -148,236 +34,15 @@ uses
 
 {$R *.fmx}
 
-{ TPieSlice }
-
-constructor TPieSlice.Create(AValue: Double; AColor: TAlphaColor; AText: string;
-  AEnabled: Boolean);
-begin
-  Value := AValue;
-  Color := AColor;
-  Text := AText;
-  Enabled := AEnabled;
-end;
-
-{ TLayoutLegend }
-
-procedure TLayoutLegend.Click;
-begin
-{$IFDEF MSWINDOWS}
-  Tap(TPointF.Create(0, 0));
-{$ELSE}
-  inherited;
-{$ENDIF}
-end;
-
-constructor TLayoutLegend.Create(AOwner: TComponent);
-begin
-  inherited;
-  HitTest := True;
-  Height := 25;
-  var
-  LLytColor := TLayout.Create(Self);
-  LLytColor.Parent := Self;
-  LLytColor.Align := TAlignLayout.MostLeft;
-  LLytColor.Width := FRectColorWidth;
-  LLytColor.TabStop := False;
-  LLytColor.HitTest := False;
-  LLytColor.Margins.Left := 10;
-
-  FRectColor := TRectangle.Create(Self);
-  FRectColor.Parent := LLytColor;
-  FRectColor.Align := TAlignLayout.VertCenter;
-  FRectColor.Stroke.Kind := TBrushKind.None;
-  FRectColor.Height := FRectColorHeight;
-  FRectColor.Margins.Left := 5;
-  FRectColor.Margins.Right := 5;
-  FRectColor.HitTest := False;
-
-  FLbl := TLabel.Create(Self);
-  FLbl.Parent := Self;
-  FLbl.Align := TAlignLayout.Left;
-  FLbl.AutoSize := True;
-  FLbl.WordWrap := False;
-  FLbl.Margins.Left := 5;
-  FLbl.HitTest := False;
-  FLbl.StyledSettings := FLbl.StyledSettings - [TStyledSetting.Size, TStyledSetting.Style];
-
-  TMessageManager.DefaultManager.SubscribeToMessage(TMessagingSliceEnabled, MessageListener);
-end;
-
-destructor TLayoutLegend.Destroy;
-begin
-  TMessageManager.DefaultManager.Unsubscribe(TMessagingSliceEnabled, MessageListener);
-  inherited;
-end;
-
-function TLayoutLegend.GetColor: TAlphaColor;
-begin
-  Result := FRectColor.Fill.Color;
-end;
-
-procedure TLayoutLegend.MessageListener(const Sender: TObject;
-  const M: TMessage);
-begin
-  if (M.InheritsFrom(TMessagingSliceEnabled)) then
-  begin
-    var
-    LMSE := M as TMessagingSliceEnabled;
-    if LMSE.Index = &Index then
-    begin
-      if (TFontStyle.fsStrikeOut in FLbl.TextSettings.Font.Style) then
-        FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style - [TFontStyle.fsStrikeOut]
-      else
-        FLbl.TextSettings.Font.Style := FLbl.TextSettings.Font.Style + [TFontStyle.fsStrikeOut];
-    end;
-  end;
-end;
-
-procedure TLayoutLegend.Painting;
-begin
-  inherited;
-  TControl(FRectColor.Parent).Width := FRectColorWidth * FLegendSize;
-  FRectColor.Height := FRectColorHeight * FLegendSize;
-  FLbl.TextSettings.Font.Size := 12 * FLegendSize;
-  Width := FLbl.Position.X + FLbl.Width + 10;
-end;
-
-procedure TLayoutLegend.SetColor(const Value: TAlphaColor);
-begin
-  FRectColor.Fill.Color := Value;
-end;
-
 { TFrmSkiaChartPie }
 
-procedure TFrmSkiaChartPie.Clear;
-begin
-  skChart.OnDraw := nil;
-  lytLegend.OnPainting := nil;
-  try
-    SetLength(FSlices, 0);
-    FObjLstLegend.Clear;
-  finally
-    skChart.OnDraw := skChartDraw;
-    lytLegend.OnPainting := lytLegendPainting;
-  end;
-end;
-
-constructor TFrmSkiaChartPie.Create(AOwner: TComponent);
-begin
-  inherited;
-  SetLength(FSlices, 0);
-  FLegendSize := 1;
-  FObjLstLegend := TObjectList<TLayoutLegend>.Create;
-end;
-
-destructor TFrmSkiaChartPie.Destroy;
-begin
-  if Assigned(FObjLstLegend) then
-  begin
-    try
-      while FObjLstLegend.Count > 0 do
-        FObjLstLegend.ExtractAt(0);
-      FreeAndNil(FObjLstLegend);
-    except
-
-    end;
-  end;
-  inherited;
-end;
-
-procedure TFrmSkiaChartPie.lytLegendPainting(Sender: TObject; Canvas: TCanvas;
-  const ARect: TRectF);
-begin
-  // Legend button position
-  lytLegend.OnPainting := nil;
-  try
-    var
-    LHeightBase := (25 * (FLegendSize));
-    var
-    LHeight := LHeightBase;
-    var
-    LPos : Single := 0;
-    for var i := 0 to Pred(FObjLstLegend.Count) do
-    begin
-      var
-      LLyt := FObjLstLegend[i];
-      LLyt.FLegendSize := FLegendSize;
-      lytLegend.Height := LHeightBase;
-      var
-      LPosNew := LPos + LLyt.Width;
-      if LPosNew > (lytLegend.Width - 5) then
-      begin // Add new line
-        LHeight := LHeight + LHeightBase;
-        LPos := 0;
-      end;
-      LLyt.Position.Y := LHeight - LHeightBase;
-      LLyt.Position.X := LPos;
-      LPos := LLyt.Position.X + LLyt.Width;
-    end;
-    lytLegend.Height := LHeight + 5;
-  finally
-    lytLegend.OnPainting := lytLegendPainting;
-  end;
-end;
-
-procedure TFrmSkiaChartPie.lytSelectedSliceBottomPainting(Sender: TObject;
-  Canvas: TCanvas; const ARect: TRectF);
-begin
-  lytSelectedSlice.Height := lytSelectedSliceBottom.Position.Y + lytSelectedSliceBottom.Height + 5;
-end;
-
-procedure TFrmSkiaChartPie.OnLegendTap(Sender: TObject; const APoint: TPointF);
-begin
-  var
-  LEnabledCount := 2;
-  if FSlices[TLayoutLegend(Sender).&Index].Enabled then
-  begin // Checks if the current lenged is the last one TRUE, can't disable last one
-    LEnabledCount := 0;
-    for var i := Low(FSlices) to High(FSlices) do
-    begin
-      if FSlices[i].Enabled then
-        Inc(LEnabledCount);
-      if LEnabledCount > 1 then
-        Break;
-    end;
-  end;
-  if LEnabledCount > 1 then
-  begin
-    FSlices[TLayoutLegend(Sender).&Index].Enabled := not FSlices[TLayoutLegend(Sender).&Index].Enabled;
-    TMessageManager.DefaultManager.SendMessage(Sender, TMessagingSliceEnabled.Create(TLayoutLegend(Sender).&Index, FSlices[TLayoutLegend(Sender).&Index].Enabled));
-    skChart.Redraw;
-  end;
-end;
-
-procedure TFrmSkiaChartPie.rctSelectedSliceBackgroundClick(Sender: TObject);
-begin
-{$IFDEF MSWINDOWS}
-  if (Sender.InheritsFrom(TControl)) and (Assigned(TControl(Sender).OnTap)) then
-    TControl(Sender).OnTap(Sender, TPointF.Create(0, 0));
-{$ENDIF}
-end;
-
-procedure TFrmSkiaChartPie.rctSelectedSliceBackgroundTap(Sender: TObject;
-  const Point: TPointF);
-begin
-  if tmrLabel.Enabled then
-    Exit;
-  FSelectedSlice := -1;
-  UpdateLegend(FSelectedSlice, TPointF.Create(0, 0), 0, 0);
-end;
-
-procedure TFrmSkiaChartPie.SetLegendSize(const Value: Single);
-begin
-  FLegendSize := Value;
-end;
-
-procedure TFrmSkiaChartPie.skChartDraw(ASender: TObject;
+procedure TFrmSkiaChartPie.DoChartDraw(ASender: TObject;
   const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
 var
   LCenter: TPointF;
   LRadius: Single;
   LStartAngle, LSweepAngle, LTotal, LCurrentAngle: Single;
-  LSlice: TPieSlice;
+  LSlice: TChartItem;
   LPaint: ISkPaint;
   LPathBuilder: ISkPathBuilder;
   LPath: ISkPath;
@@ -385,13 +50,14 @@ var
   LFont: ISkFont;
   i: Integer;
 begin
+  // inherited;
   // Center and radius of chart
   LCenter := TPointF.Create(ADest.Width / 2, ADest.Height / 2);
   LRadius := Min(ADest.Width, ADest.Height) / 2 * 0.8; // 80% of current size
 
   // Sum of enabled values
   LTotal := 0;
-  for LSlice in FSlices do
+  for LSlice in FItems do
     if LSlice.Enabled then
     begin
       LTotal := LTotal + LSlice.Value
@@ -405,22 +71,22 @@ begin
   // Paint the slices based on the animation angle
   LStartAngle := CStartAngle;
   LCurrentAngle := 0;
-  for i := 0 to High(FSlices) do
+  for i := 0 to High(FItems) do
   begin
-    if not FSlices[i].Enabled then
+    if not FItems[i].Enabled then
       Continue;
     // Check the Slice's angle
-    LSweepAngle := (FSlices[i].Value / LTotal) * 360;
+    LSweepAngle := (FItems[i].Value / LTotal) * 360;
 
     // Check if paint the Slice (artially or complete)
-    if (LCurrentAngle < FAnimationAngle) then
+    if (LCurrentAngle < FAnimationProgress) then
     begin
       var
-      LDrawAngle := Min(LSweepAngle, FAnimationAngle - LCurrentAngle); // Angle to draw
+      LDrawAngle := Min(LSweepAngle, FAnimationProgress - LCurrentAngle); // Angle to draw
       if LDrawAngle > 0 then
       begin
         // Slice color
-        LPaint.Color := FSlices[i].Color;
+        LPaint.Color := FItems[i].Color;
 
         // draw the path
         LPathBuilder := TSkPathBuilder.Create;
@@ -448,7 +114,7 @@ begin
     LCurrentAngle := LCurrentAngle + LSweepAngle;
   end;
 
-  UpdateLegend(FSelectedSlice, LCenter, LRadius, LTotal);
+  UpdateLegend(FSelectedItem, LCenter, LRadius, LTotal);
 end;
 
 procedure TFrmSkiaChartPie.skChartMouseDown(Sender: TObject;
@@ -459,9 +125,10 @@ var
   LTotal, LCurrentAngle, LSweepAngle: Single;
   LAngle: Single;
   LDistance: Single;
-  LSlice: TPieSlice;
+  LSlice: TChartItem;
   i: Integer;
 begin
+  inherited;
   // Check the center and radius
   LCenter := TPointF.Create(skChart.Width / 2, skChart.Height / 2);
   LRadius := Min(skChart.Width, skChart.Height) / 2 * 0.8;
@@ -482,64 +149,55 @@ begin
   begin
     // Sum of enabled values
     LTotal := 0;
-    for LSlice in FSlices do
+    for LSlice in FItems do
       if LSlice.Enabled then
         LTotal := LTotal + LSlice.Value;
 
     // Find the clicked slice
     LCurrentAngle := 0;
-    for i := 0 to High(FSlices) do
+    for i := 0 to High(FItems) do
     begin
-      if not FSlices[i].Enabled then
+      if not FItems[i].Enabled then
         Continue;
-      LSweepAngle := (FSlices[i].Value / LTotal) * 360;
+      LSweepAngle := (FItems[i].Value / LTotal) * 360;
       if (LAngle >= LCurrentAngle) and (LAngle < LCurrentAngle + LSweepAngle) then
       begin
-        if i = FSelectedSlice then
-          FSelectedSlice := -1 // Deselect if second click
+        if i = FSelectedItem then
+          FSelectedItem := -1 // Deselect if second click
         else
-          FSelectedSlice := i; // Select the slice
+          FSelectedItem := i; // Select the slice
         Break;
       end;
       LCurrentAngle := LCurrentAngle + LSweepAngle;
     end;
-    UpdateLegend(FSelectedSlice, LCenter, LRadius, LTotal);
+    UpdateLegend(FSelectedItem, LCenter, LRadius, LTotal);
     skChart.Redraw;
   end
   else
   begin
-    FSelectedSlice := -1; // Deselect
-    UpdateLegend(FSelectedSlice, LCenter, LRadius, LTotal);
+    FSelectedItem := -1; // Deselect
+    UpdateLegend(FSelectedItem, LCenter, LRadius, LTotal);
   end;
 end;
 
 procedure TFrmSkiaChartPie.StartAnimation;
 begin
-  // Config animation
-  FAnimationAngle := 0;
   FAnimationSpeed := 5;
   tmrAnimation.Interval := 3;
-  FSelectedSlice := -1;
-  lytSelectedSlice.Visible := False;
-  tmrAnimation.Enabled := True;
-  skChart.Redraw;
+  inherited;
 end;
 
 procedure TFrmSkiaChartPie.tmrAnimationTimer(Sender: TObject);
 begin
-  FAnimationAngle := FAnimationAngle + FAnimationSpeed;
-  if FAnimationAngle >= 360 then
+  inherited;
+  FAnimationProgress := FAnimationProgress + FAnimationSpeed;
+  if FAnimationProgress >= 360 then
   begin
     tmrAnimation.Enabled := False; // Stop animation
-    FAnimationAngle := 360; // Full circle
+    FAnimationProgress := 360; // Full circle
   end;
   FAnimationSpeed := FAnimationSpeed * 1.05;
   skChart.Redraw;
-end;
-
-procedure TFrmSkiaChartPie.tmrLabelTimer(Sender: TObject);
-begin
-  tmrLabel.Enabled := False;
 end;
 
 procedure TFrmSkiaChartPie.UpdateLegend(AIndex: Integer; ACenter: TPointF;
@@ -550,9 +208,9 @@ var
   LLabelPos: TPointF;
   i: Integer;
 begin
-  if (AIndex < 0) or (not FSlices[AIndex].Enabled) then
+  if (AIndex < 0) or (not FItems[AIndex].Enabled) then
   begin
-    lytSelectedSlice.Visible := False;
+    lytSelectedItem.Visible := False;
     tmrLabel.Enabled := False;
     Exit;
   end;
@@ -560,11 +218,11 @@ begin
   // Calculate the Legend position based on selected Slice
   LStartAngle := CStartAngle;
   LCurrentAngle := 0;
-  for i := 0 to High(FSlices) do
+  for i := 0 to High(FItems) do
   begin
-    if not FSlices[i].Enabled then
+    if not FItems[i].Enabled then
       Continue;
-    LSweepAngle := (FSlices[i].Value / ATotal) * 360;
+    LSweepAngle := (FItems[i].Value / ATotal) * 360;
     if i = AIndex then
     begin
       LAngle := DegToRad(LStartAngle + LSweepAngle / 2);
@@ -572,33 +230,33 @@ begin
         ACenter.X + Cos(LAngle) * ARadius * 0.7,
         ACenter.Y + Sin(LAngle) * ARadius * 0.7
         );
-      lblSelectedSliceText.Text := FSlices[i].Text;
-      lblSelectedSliceValue.Text := 'R$ ' + FormatFloat('##0.,00', FSlices[i].Value);
+      lblSelectedItemText.Text := FItems[i].Text;
+      lblSelectedItemValue.Text := 'R$ ' + FormatFloat('##0.,00', FItems[i].Value);
       var
-      LPosX := LLabelPos.X - lytSelectedSlice.Width / 2; // Horizontal center
+      LPosX := LLabelPos.X - lytSelectedItem.Width / 2; // Horizontal center
       var
-      LPosY := LLabelPos.Y - lytSelectedSlice.Height / 2; // Vertical center
+      LPosY := LLabelPos.Y - lytSelectedItem.Height / 2; // Vertical center
       var
-      LColor := FSlices[i].Color;
+      LColor := FItems[i].Color;
       tmrLabel.Enabled := False;
-      if lytSelectedSlice.Visible then
+      if lytSelectedItem.Visible then
       begin
-        faniSelectedSliceX.StartValue := lytSelectedSlice.Position.X;
-        faniSelectedSliceY.StartValue := lytSelectedSlice.Position.Y;
-        caniSelectedSlice.StartValue := rctSelectedSliceColor.Fill.Color;
-        faniSelectedSliceX.StopValue := LPosX;
-        faniSelectedSliceY.StopValue := LPosY;
-        caniSelectedSlice.StopValue := LColor;
-        faniSelectedSliceX.Start;
-        faniSelectedSliceY.Start;
-        caniSelectedSlice.Start;
+        faniSelectedItemX.StartValue := lytSelectedItem.Position.X;
+        faniSelectedItemY.StartValue := lytSelectedItem.Position.Y;
+        caniSelectedItem.StartValue := rctSelectedItemColor.Fill.Color;
+        faniSelectedItemX.StopValue := LPosX;
+        faniSelectedItemY.StopValue := LPosY;
+        caniSelectedItem.StopValue := LColor;
+        faniSelectedItemX.Start;
+        faniSelectedItemY.Start;
+        caniSelectedItem.Start;
       end
       else
       begin
-        rctSelectedSliceColor.Fill.Color := LColor;
-        lytSelectedSlice.Position.X := LPosX;
-        lytSelectedSlice.Position.Y := LPosY;
-        lytSelectedSlice.Visible := True;
+        rctSelectedItemColor.Fill.Color := LColor;
+        lytSelectedItem.Position.X := LPosX;
+        lytSelectedItem.Position.Y := LPosY;
+        lytSelectedItem.Visible := True;
       end;
       tmrLabel.Enabled := True;
       Break;
@@ -606,60 +264,6 @@ begin
     LStartAngle := LStartAngle + LSweepAngle;
     LCurrentAngle := LCurrentAngle + LSweepAngle;
   end;
-end;
-
-procedure TFrmSkiaChartPie.SliceAdd(AValue: Double; AText: string);
-begin
-  var
-  LIndex := Length(FSlices);
-  if LIndex > Pred(Length(CAryColors)) then
-    LIndex := LIndex - Length(CAryColors);
-  SliceAdd(AValue, CAryColors[LIndex], AText);
-end;
-
-procedure TFrmSkiaChartPie.SliceAdd(AValue: Double; AColor: TAlphaColor;
-  AText: string);
-begin
-  var
-  LIndex := -1;
-
-  // Find slice with same Text
-  for var i := Low(FSlices) to High(FSlices) do
-  begin
-    if FSlices[i].Text = AText then
-    begin
-      LIndex := i;
-      Break;
-    end;
-  end;
-  if LIndex = -1 then
-  begin
-    LIndex := Length(FSlices);
-    SetLength(FSlices, Succ(LIndex));
-    FSlices[LIndex] := TPieSlice.Create(AValue, AColor, AText);
-
-    var
-    LLyt := TLayoutLegend.Create(Self);
-    LLyt.Parent := lytLegend;
-    LLyt.OnTap := OnLegendTap;
-    LLyt.Text.Text := FSlices[LIndex].Text;
-    LLyt.Color := FSlices[LIndex].Color;
-    LLyt.&Index := LIndex;
-    FObjLstLegend.Add(LLyt)
-  end
-  else
-  begin
-    FSlices[LIndex].Value := AValue;
-    FSlices[LIndex].Color := AColor;
-  end;
-end;
-
-{ TMessagingSliceEnabled }
-
-constructor TMessagingSliceEnabled.Create(AIndex: Integer; AEnabled: Boolean);
-begin
-  FIndex := AIndex;
-  FEnabled := AEnabled;
 end;
 
 end.

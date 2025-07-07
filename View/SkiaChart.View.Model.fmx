@@ -1,0 +1,141 @@
+object FrmSkiaChartModel: TFrmSkiaChartModel
+  Size.Width = 618.000000000000000000
+  Size.Height = 577.000000000000000000
+  Size.PlatformDefault = False
+  object lytLegend: TLayout
+    Align = Top
+    Margins.Bottom = 10.000000000000000000
+    Size.Width = 618.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 7
+    TabStop = False
+    OnPainting = lytLegendPainting
+  end
+  object skChart: TSkPaintBox
+    Align = Client
+    HitTest = True
+    Size.Width = 618.000000000000000000
+    Size.Height = 542.000000000000000000
+    Size.PlatformDefault = False
+    OnDraw = skChartDraw
+    object lytSelectedItem: TLayout
+      Position.X = 368.000000000000000000
+      Position.Y = 48.000000000000000000
+      Size.Width = 105.000000000000000000
+      Size.Height = 41.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      TabStop = False
+      object rctSelectedItemBackground: TRectangle
+        OnTap = rctSelectedItemBackgroundTap
+        Align = Contents
+        Fill.Color = claBlack
+        Opacity = 0.699999988079071000
+        Size.Width = 105.000000000000000000
+        Size.Height = 41.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Kind = None
+        XRadius = 5.000000000000000000
+        YRadius = 5.000000000000000000
+        OnClick = rctSelectedItemBackgroundClick
+      end
+      object lytSelectedItemBackground: TLayout
+        Align = Contents
+        Padding.Left = 5.000000000000000000
+        Padding.Top = 5.000000000000000000
+        Padding.Right = 5.000000000000000000
+        Padding.Bottom = 5.000000000000000000
+        Size.Width = 105.000000000000000000
+        Size.Height = 41.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object lblSelectedItemText: TLabel
+          Align = Top
+          AutoSize = True
+          StyledSettings = []
+          Position.X = 5.000000000000000000
+          Position.Y = 5.000000000000000000
+          Size.Width = 95.000000000000000000
+          Size.Height = 14.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.Font.Family = 'Arial'
+          TextSettings.Font.StyleExt = {00070000000000000004000000}
+          TextSettings.FontColor = claWhite
+          Text = 'test'
+          TabOrder = 0
+          TabStop = False
+        end
+        object lytSelectedItemBottom: TLayout
+          Align = Top
+          Position.X = 5.000000000000000000
+          Position.Y = 19.000000000000000000
+          Size.Width = 95.000000000000000000
+          Size.Height = 20.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          OnPainting = lytSelectedItemBottomPainting
+          object lblSelectedItemValue: TLabel
+            Align = Client
+            StyledSettings = []
+            Size.Width = 76.000000000000000000
+            Size.Height = 20.000000000000000000
+            Size.PlatformDefault = False
+            TextSettings.Font.Family = 'Arial'
+            TextSettings.Font.Size = 11.000000000000000000
+            TextSettings.FontColor = claWhite
+            Text = 'Label1'
+            TabOrder = 0
+            TabStop = False
+          end
+          object lytSelectedItemColor: TLayout
+            Align = Left
+            Margins.Right = 5.000000000000000000
+            Size.Width = 14.000000000000000000
+            Size.Height = 20.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            object rctSelectedItemColor: TRectangle
+              Align = Center
+              Padding.Right = 5.000000000000000000
+              Size.Width = 12.000000000000000000
+              Size.Height = 12.000000000000000000
+              Size.PlatformDefault = False
+              Stroke.Color = claWhite
+              object caniSelectedItem: TColorAnimation
+                Duration = 0.200000002980232200
+                PropertyName = 'Fill.Color'
+                StartValue = claWhite
+                StopValue = claWhite
+              end
+            end
+          end
+        end
+      end
+      object tmrLabel: TTimer
+        Enabled = False
+        Interval = 500
+        OnTimer = tmrLabelTimer
+        Left = 256
+        Top = 130
+      end
+      object faniSelectedItemX: TFloatAnimation
+        Duration = 0.200000002980232200
+        PropertyName = 'Position.X'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+      object faniSelectedItemY: TFloatAnimation
+        Duration = 0.200000002980232200
+        PropertyName = 'Position.Y'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+  end
+  object tmrAnimation: TTimer
+    Enabled = False
+    Left = 312
+    Top = 74
+  end
+end
